@@ -5,9 +5,9 @@
 exports.up = function (knex) {
   return knex.schema.createTable("user_product", function (table) {
     table.increments();
-    table.integer("user_id").unsigned();
+    table.integer("user_id");
     table.foreign("user_id").references("users.id").onDelete("CASCADE");
-    table.integer("product_id").unsigned();
+    table.integer("product_id");
     table.foreign("product_id").references("products.id").onDelete("CASCADE");
   });
 };

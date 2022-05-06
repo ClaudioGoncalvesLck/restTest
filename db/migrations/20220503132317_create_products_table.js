@@ -6,8 +6,8 @@ exports.up = function (knex) {
   return knex.schema.createTable("products", function (table) {
     table.increments();
     table.string("name").notNullable();
-    table.string("amount").notNullable();
-    table.timestamps();
+    table.string("price").notNullable();
+    table.timestamps(true, true);
   });
 };
 
