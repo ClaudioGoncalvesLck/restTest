@@ -1,5 +1,6 @@
 var express = require("express");
 var router = express.Router();
+const knex = require("../db/knex");
 
 //TIRAR DAQUI
 const config = require("../db/knexfile")[process.env.NODE_ENV || "development"];

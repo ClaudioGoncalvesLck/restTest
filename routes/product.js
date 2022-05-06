@@ -1,9 +1,6 @@
 var express = require("express");
 var router = express.Router();
-
-//TIRAR ISTO DAQUI
-const config = require("../db/knexfile")[process.env.NODE_ENV || "development"];
-const knex = require("knex")(config);
+const knex = require("../db/knex");
 
 //GET ALL PRODUCTS
 router.get("/", (req, res) => {
