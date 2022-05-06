@@ -19,7 +19,10 @@ module.exports = {
       database: "postgres",
     },
     migrations: {
-      directory: path.join(__dirname, "/migrations"),
+      directory: path.join(__dirname, "/db/migrations"),
+    },
+    seeds: {
+      directory: path.join(__dirname, "/db/seeds"),
     },
   },
 };

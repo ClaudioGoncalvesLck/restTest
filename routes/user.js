@@ -1,62 +1,129 @@
 var express = require("express");
 var router = express.Router();
+const knex = require("../db/knex");
+const { validateEntityInfo } = require("../utils/helper");
 
-//TIRAR ISTO DAQUI
-const config = require("../db/knexfile")[process.env.NODE_ENV || "development"];
-const knex = require("knex")(config);
+// GET ALL USERS
+router.get("/", async (req, res) => {
+  const result = await knex.select().table("users");
 
-router.get("/", (req, res) => {
-  knex
-    .select()
-    .table("users")
-    .then((result) => {
-      res.send(result);
-    });
+  if (result.length === 0) {
+    res.status(404).send({ message: "No users found" });
+  } else {
+    res.send(result);
+  }
 });
-router.post("/", (req, res) => {
+
+// CREATE USER
+router.post("/", async (req, res) => {
   const user = req.query;
-  knex("users")
-    .insert(user)
-    .returning("*")
-    .then((result) => {
-      res.status(201).send({ message: "User created", result });
-    })
-    .catch((error) => {
-      throw new Error(error);
-    });
+  if (!validateEntityInfo(user, "name")) {
+    res.status(400).send({ message: "Missing user information" });
+  } else {
+    const result = await knex("users").insert(user).returning("*");
+    res.status(201).send(result);
+  }
 });
-router.get("/:user_id", (req, res) => {
+
+// GET USER
+router.get("/:user_id", async (req, res) => {
   const user_id = req.params.user_id;
-  knex("users")
-    .where({ id: user_id })
-    .select()
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((error) => {
-      throw new Error(error);
-    });
+  const result = await knex("users").where({ id: user_id }).select();
+
+  if (result.length === 0) {
+    res.status(404).send({ message: "User not found" });
+  } else {
+    res.send(result);
+  }
 });
-router.delete("/:user_id", (req, res) => {
+
+// DELETE USER
+router.delete("/:user_id", async (req, res) => {
   const user_id = req.params.user_id;
-  knex("users")
+  const result = await knex("users")
     .where({ id: user_id })
     .del()
-    .returning("*")
-    .then((result) => {
-      res.status(200).send({ message: "User deleted", result });
-    });
+    .returning("*");
+  if (result.length === 0) {
+    res.status(404).send({ message: "User not found" });
+  } else {
+    res.status(200).send({ message: "User deleted", result });
+  }
 });
-router.patch("/:user_id", (req, res) => {
-  const userinfo = req.query;
+
+// UPDATE
+router.patch("/:user_id", async (req, res) => {
+  const userInfo = req.query;
+
+  if (!validateEntityInfo(userInfo, "name")) {
+    res.status(400).send({ message: "Missing user information" });
+  } else {
+    const user_id = req.params.user_id;
+    const result = await knex("users")
+      .where({ id: user_id })
+      .update(userInfo)
+      .returning("*");
+
+    if (result.length === 0) {
+      res.status(404).send({ message: "User not found" });
+    } else {
+      res.status(200).send({ messsage: "User updated", result });
+    }
+  }
+});
+
+// RELATION ROUTES
+router.post("/:user_id/product/:product_id", async (req, res) => {
+  const product_id = req.params.product_id;
   const user_id = req.params.user_id;
-  knex("users")
-    .where({ id: user_id })
-    .update(userinfo)
-    .returning("*")
-    .then((result) => {
-      res.status(200).send({ message: "User updated", result });
-    });
+
+  // CHANGE TO SINGLE QUERY???
+  const product = await knex("products").where({ id: product_id });
+  const user = await knex("users").where({ id: user_id });
+
+  if (user.length == 0 || product.length == 0) {
+    res.status(404).send({ message: "Product or user doesn't exist" });
+  } else {
+    const result = await knex("user_product").insert(req.params).returning("*");
+    res.status(201).send({ message: "Produto adicionado com sucesso", result });
+  }
+});
+
+router.delete("/:user_id/product/:product_id", async (req, res) => {
+  const product_id = req.params.product_id;
+  const user_id = req.params.user_id;
+
+  const result = await knex("user_product")
+    .where({ product_id: product_id, user_id: user_id })
+    .del()
+    .returning("*");
+  if (result.length === 0) {
+    res.status(404).send({ message: "Product not found" });
+  } else {
+    res.status(200).send({ message: "Product deleted from user", result });
+  }
+});
+
+router.get("/:user_id/products", async (req, res) => {
+  const user_id = req.params.user_id;
+  const user = await knex("users").where({ id: user_id });
+
+  if (user.length === 0) {
+    res.status(404).send({ message: "User not found" });
+  } else {
+    // SELECT * FROM products JOIN (select product_id, count(product_id) from user_product where user_id = 6001 group by product_id) as amount ON products.id = amount.product_id
+    const userProducts = await knex.select(
+      knex.raw(
+        "* FROM products JOIN (select product_id, count(product_id) from user_product where user_id = ? group by product_id) as amount ON products.id = amount.product_id",
+        [user_id]
+      )
+    );
+    if (userProducts.length === 0) {
+      res.status(404).send({ message: "User has no products" });
+    } else {
+      res.status(200).send(userProducts);
+    }
+  }
 });
 
 module.exports = router;
