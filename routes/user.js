@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
       return;
     }
 
-    res.send(users);
+    res.status(200).send(users);
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).send(inputValidationErrorHandler(error));
@@ -60,7 +60,7 @@ router.get("/:user_id", async (req, res) => {
       return;
     }
 
-    res.send({ message: "User found", foundUser });
+    res.status(200).send({ message: "User found", foundUser });
   } catch (error) {
     console.log(error);
   }
@@ -78,7 +78,7 @@ router.delete("/:user_id", async (req, res) => {
       return;
     }
 
-    res.send({ message: "User deleted", deletedUser });
+    res.status(200).send({ message: "User deleted", deletedUser });
   } catch (error) {
     console.log(error);
   }
@@ -131,7 +131,8 @@ router.post("/:user_id/product/:product_id", async (req, res) => {
   try {
     // TODO check syntax
     await User.relatedQuery("products").for(user_id).relate(product_id);
-    res.send({ message: "Added product to user" });
+    // 200 || 201 ?
+    res.status(200).send({ message: "Added product to user" });
   } catch (error) {
     console.log(error);
   }
@@ -154,11 +155,13 @@ router.delete("/:user_id/product/:product_id", async (req, res) => {
       .where("products.id", "=", product_id)
       .returning("*");
     if (!removedProductFromUser) {
-      res.send({ message: "User doesn't have this product" });
+      res.status(404).send({ message: "User doesn't have this product" });
       return;
     }
 
-    res.send({ message: "Removed products from user", removedProductFromUser });
+    res
+      .status(200)
+      .send({ message: "Removed products from user", removedProductFromUser });
   } catch (error) {
     console.log(error);
   }

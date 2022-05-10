@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
       res.status(404).send({ message: "Products not found" });
       return;
     }
-    res.send(products);
+    res.status(200).send(products);
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).send(inputValidationErrorHandler(error));
@@ -58,7 +58,7 @@ router.get("/:product_id", async (req, res) => {
       return;
     }
 
-    res.send({ message: "Product found", foundProduct });
+    res.status(200).send({ message: "Product found", foundProduct });
   } catch (error) {
     console.log(error);
   }
@@ -77,7 +77,7 @@ router.delete("/:product_id", async (req, res) => {
       return;
     }
 
-    res.send({ message: "Product deleted", deletedProduct });
+    res.status(200).send({ message: "Product deleted", deletedProduct });
   } catch (error) {
     console.log(error);
   }
@@ -98,7 +98,7 @@ router.patch("/:product_id", async (req, res) => {
       return;
     }
 
-    res.send({ message: "Product updated", updatedProduct });
+    res.status(200).send({ message: "Product updated", updatedProduct });
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).send(inputValidationErrorHandler(error));
