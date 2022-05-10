@@ -1,75 +1,111 @@
 var express = require("express");
 var router = express.Router();
+
 const knex = require("../db/knex");
+
 const { Model, ValidationError } = require("objection");
 const { Product } = require("../models/Product");
 
+//HELPER FUNCTIONS
+const { inputValidationErrorHandler } = require("../utils/helper");
+
 Model.knex(knex);
+
 //GET ALL PRODUCTS
 router.get("/", async (req, res) => {
-  const result = await knex.select().table("products");
-  if (result.length === 0) {
-    res.status(404).send({ message: "No products found" });
-  } else {
-    res.status(200).send(result);
+  try {
+    const foundProducts = await Product.query();
+    if (!foundProducts) {
+      res.status(404).send({ message: "Products not found" });
+      return;
+    }
+    res.send(products);
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).send(inputValidationErrorHandler(error));
+      return;
+    }
+
+    console.log(error);
   }
 });
 
 //CREATE PRODUCT
 router.post("/", async (req, res) => {
-  const productInfo = req.query;
+  const newProductInfo = req.query;
 
-  if (!validateEntityInfo(productInfo, "name", "price")) {
-    res.status(400).send({ message: "Missing product information" });
-  } else {
-    const result = await knex("products").insert(productInfo).returning("*");
-    res.status(201).send({ message: "Product created", result });
+  try {
+    const createdProduct = await Product.query().insert(newProductInfo);
+    res.status(201).send({ message: "Product created", createdProduct });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).send(inputValidationErrorHandler(error));
+      return;
+    }
+
+    console.log(error);
   }
 });
 
-//GET PRODUCT BY ID
+//GET PRODUCT
 router.get("/:product_id", async (req, res) => {
   const product_id = req.params.product_id;
-  const result = await knex("products").where({ id: product_id }).select();
 
-  if (result.length === 0) {
-    res.status(404).send({ message: "Product not found" });
-  } else {
-    res.status(200).send(result);
+  try {
+    const foundProduct = await Product.query().findById(product_id);
+    if (!foundProduct) {
+      res.status(404).send({ message: "Product not found" });
+      return;
+    }
+
+    res.send({ message: "Product found", foundProduct });
+  } catch (error) {
+    console.log(error);
   }
 });
 
 //DELETE PRODUCT
 router.delete("/:product_id", async (req, res) => {
   const product_id = req.params.product_id;
-  const result = await knex("products")
-    .where({ id: product_id })
-    .del()
-    .returning("*");
 
-  if (result.length === 0) {
-    res.status(404).send({ message: "Product not found" });
-  } else {
-    res.status(200).send({ message: "Product deleted" });
+  try {
+    const deletedProduct = await Product.query()
+      .deleteById(product_id)
+      .returning("*");
+    if (!deletedProduct) {
+      res.status(404).send({ message: "Product not found" });
+      return;
+    }
+
+    res.send({ message: "Product deleted", deletedProduct });
+  } catch (error) {
+    console.log(error);
   }
 });
 
 //UPDATE PRODUCT
 router.patch("/:product_id", async (req, res) => {
   const productInfo = req.query;
+  const product_id = req.params.product_id;
 
-  if (!validateEntityInfo(productInfo, "name", "price")) {
-    res.status(400).send({ message: "Missing product information" });
-  } else {
-    const product_id = req.params.product_id;
-    const result = await knex("products")
-      .where({ id: product_id })
-      .update(productInfo)
+  try {
+    const updatedProduct = await Product.query()
+      .findById(product_id)
+      .patch(productInfo)
       .returning("*");
-
-    if (result.length === 0) {
+    if (!updatedProduct) {
       res.status(404).send({ message: "Product not found" });
+      return;
     }
+
+    res.send({ message: "Product updated", updatedProduct });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).send(inputValidationErrorHandler(error));
+      return;
+    }
+
+    console.log(error);
   }
 });
 

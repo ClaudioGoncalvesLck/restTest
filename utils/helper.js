@@ -1,21 +1,24 @@
 /**
- * Verify request query.
- * @param {object} req.params - The parameters received in the request.
- * @param {...array} properties - The properties you want to verify.
- * @returns {boolean} - Returns whether the properties are present and not empty in the request
+ * Handle validation errors
+ * @param {object} error - The caught validation error.
+ * @returns {object} - Returns object with the fields and their respective errors
  */
+const inputValidationErrorHandler = (error) => {
+  const errorData = error.data;
+  const errors = {};
 
-const validateEntityInfo = (entity, ...properties) => {
-  for (let i = 0; i < properties.length; i++) {
-    const element = properties[i];
-    if (
-      !Object.keys(entity).includes(element) ||
-      Object.values(entity).includes("")
-    ) {
-      return false;
+  for (const key in errorData) {
+    if (Object.hasOwnProperty.call(errorData, key)) {
+      const element = errorData[key];
+
+      if (element[0].keyword === "required") {
+        errors[key] = { message: `is required` };
+      } else {
+        errors[key] = { message: element[0].message };
+      }
     }
   }
-  return true;
+  return errors;
 };
 
-module.exports = { validateEntityInfo };
+module.exports = { inputValidationErrorHandler };
