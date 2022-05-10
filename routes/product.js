@@ -1,8 +1,10 @@
 var express = require("express");
 var router = express.Router();
 const knex = require("../db/knex");
-const { validateEntityInfo } = require("../utils/helper");
+const { Model, ValidationError } = require("objection");
+const { Product } = require("../models/Product");
 
+Model.knex(knex);
 //GET ALL PRODUCTS
 router.get("/", async (req, res) => {
   const result = await knex.select().table("products");

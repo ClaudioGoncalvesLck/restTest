@@ -1,7 +1,10 @@
 var express = require("express");
 var router = express.Router();
 const knex = require("../db/knex");
-const { validateEntityInfo } = require("../utils/helper");
+const { Model, ValidationError } = require("objection");
+const { User } = require("../models/User");
+
+Model.knex(knex);
 
 // GET ALL USERS
 router.get("/", async (req, res) => {
