@@ -11,7 +11,7 @@ const createFakeProduct = () => ({
 exports.seed = async function (knex) {
   await knex("products").del();
   const fakeProducts = [];
-  const fakeProductsAmount = 10;
+  const fakeProductsAmount = 10000;
   for (let i = 0; i < fakeProductsAmount; i++) {
     fakeProducts.push(createFakeProduct());
   }

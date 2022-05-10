@@ -10,7 +10,7 @@ const createFakeUser = () => ({
 exports.seed = async function (knex) {
   await knex("users").del();
   const fakeUsers = [];
-  const fakeUsersAmount = 1000;
+  const fakeUsersAmount = 10000;
   for (let i = 0; i < fakeUsersAmount; i++) {
     fakeUsers.push(createFakeUser());
   }
