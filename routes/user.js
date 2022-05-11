@@ -146,7 +146,7 @@ router.post("/:user_id/product/:product_id", async (req, res) => {
 });
 
 // removes every instance of a product from user
-router.delete("/:user_id/product/:product_id/:limit?", async (req, res) => {
+router.delete("/:user_id/product/:product_id", async (req, res) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
 
@@ -157,9 +157,8 @@ router.delete("/:user_id/product/:product_id/:limit?", async (req, res) => {
     }
 
     // if specified, will remove only x instances of a product from a user
-    if (req.params.limit) {
-      const limit = req.params.limit;
-
+    if (req.query.limit) {
+      const limit = req.query.limit;
       // postgres doesn't allow limits on deletes
       const removedProductLines = await User.query()
         .select()
