@@ -1,6 +1,8 @@
 const faker = require("faker");
 const createFakeUser = () => ({
   name: faker.name.findName(),
+  email: faker.internet.exampleEmail(),
+  password: faker.internet.password(),
 });
 
 /**
@@ -10,7 +12,7 @@ const createFakeUser = () => ({
 exports.seed = async function (knex) {
   await knex("users").del();
   const fakeUsers = [];
-  const fakeUsersAmount = 1000;
+  const fakeUsersAmount = 10000;
   for (let i = 0; i < fakeUsersAmount; i++) {
     fakeUsers.push(createFakeUser());
   }

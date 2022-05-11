@@ -1,74 +1,119 @@
 var express = require("express");
 var router = express.Router();
+// var auth = require("../middleware/auth");
+
 const knex = require("../db/knex");
-const { validateEntityInfo } = require("../utils/helper");
+
+const { Model, ValidationError } = require("objection");
+const { User } = require("../models/User");
+Model.knex(knex);
+
+//HELPER FUNCTIONS
+const { inputValidationErrorHandler } = require("../utils/helper");
 
 // GET ALL USERS
 router.get("/", async (req, res) => {
-  const result = await knex.select().table("users");
+  try {
+    const foundUsers = await User.query().select(
+      "id",
+      "name",
+      "email",
+      "created_at",
+      "updated_at"
+    );
+    if (foundUsers.length === 0) {
+      return res.status(404).send({ message: "Users not found" });
+    }
 
-  if (result.length === 0) {
-    res.status(404).send({ message: "No users found" });
-  } else {
-    res.send(result);
+    res.status(200).send(foundUsers);
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).send(inputValidationErrorHandler(error));
+    }
+
+    console.log(error);
   }
 });
 
 // CREATE USER
 router.post("/", async (req, res) => {
-  const user = req.query;
-  if (!validateEntityInfo(user, "name")) {
-    res.status(400).send({ message: "Missing user information" });
-  } else {
-    const result = await knex("users").insert(user).returning("*");
-    res.status(201).send(result);
+  const newUserInfo = req.query;
+
+  try {
+    // TODO check syntax
+    await User.query().insert(newUserInfo);
+    res.status(201).send({ message: "User created" });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).send(inputValidationErrorHandler(error));
+    }
+
+    console.log(error);
   }
 });
 
 // GET USER
 router.get("/:user_id", async (req, res) => {
   const user_id = req.params.user_id;
-  const result = await knex("users").where({ id: user_id }).select();
 
-  if (result.length === 0) {
-    res.status(404).send({ message: "User not found" });
-  } else {
-    res.send(result);
+  try {
+    const foundUser = await User.query()
+      .select("id", "name", "email", "created_at", "updated_at")
+      .from("users")
+      .where("id", "=", user_id);
+    if (foundUser.length === 0) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    res.status(200).send({ message: "User found", foundUser });
+  } catch (error) {
+    console.log(error);
   }
 });
 
 // DELETE USER
 router.delete("/:user_id", async (req, res) => {
   const user_id = req.params.user_id;
-  const result = await knex("users")
-    .where({ id: user_id })
-    .del()
-    .returning("*");
-  if (result.length === 0) {
-    res.status(404).send({ message: "User not found" });
-  } else {
-    res.status(200).send({ message: "User deleted", result });
+
+  try {
+    const deletedUser = await User.query()
+      .deleteById(user_id)
+      .returning("name", "email");
+
+    // returns undefined if user doesn't exist
+    if (!deletedUser) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    res.status(200).send({ message: "User deleted", deletedUser });
+  } catch (error) {
+    console.log(error);
   }
 });
 
 // UPDATE
 router.patch("/:user_id", async (req, res) => {
   const userInfo = req.query;
+  const user_id = req.params.user_id;
 
-  if (!validateEntityInfo(userInfo, "name")) {
-    res.status(400).send({ message: "Missing user information" });
-  } else {
-    const user_id = req.params.user_id;
-    const result = await knex("users")
-      .where({ id: user_id })
-      .update(userInfo)
+  try {
+    const updatedUser = await User.query()
+      .findById(user_id)
+      .patch(userInfo)
       .returning("*");
 
-    if (result.length === 0) {
-      res.status(404).send({ message: "User not found" });
-    } else {
-      res.status(200).send({ messsage: "User updated", result });
+    // returns undefined if user doesn't exist
+    if (!updatedUser) {
+      return res.status(404).send({ message: "User not found" });
     }
+
+    res.send({ message: "User updated", updatedUser });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).send(inputValidationErrorHandler(error));
+    }
+
+    console.log(error);
   }
 });
 
@@ -77,52 +122,113 @@ router.post("/:user_id/product/:product_id", async (req, res) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
 
-  // CHANGE TO SINGLE QUERY???
-  const product = await knex("products").where({ id: product_id });
-  const user = await knex("users").where({ id: user_id });
+  const foundUser = await User.query().findById(user_id);
+  if (!foundUser) {
+    return res.status(404).send({ message: "User not found" });
+  }
 
-  if (user.length == 0 || product.length == 0) {
-    res.status(404).send({ message: "Product or user doesn't exist" });
-  } else {
-    const result = await knex("user_product").insert(req.params).returning("*");
-    res.status(201).send({ message: "Produto adicionado com sucesso", result });
+  const foundProduct = await User.query()
+    .select()
+    .from("products")
+    .where("id", "=", product_id);
+  if (foundProduct.length === 0) {
+    return res.status(404).send({ message: "Product not found" });
+  }
+
+  try {
+    // TODO check syntax
+    await User.relatedQuery("products").for(user_id).relate(product_id);
+    // 200 || 201 ?
+    res.status(200).send({ message: "Added product to user" });
+  } catch (error) {
+    console.log(error);
   }
 });
 
-router.delete("/:user_id/product/:product_id", async (req, res) => {
+// removes every instance of a product from user
+router.delete("/:user_id/product/:product_id/:limit?", async (req, res) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
 
-  const result = await knex("user_product")
-    .where({ product_id: product_id, user_id: user_id })
-    .del()
-    .returning("*");
-  if (result.length === 0) {
-    res.status(404).send({ message: "Product not found" });
-  } else {
-    res.status(200).send({ message: "Product deleted from user", result });
+  try {
+    const foundUser = await User.query().findById(user_id);
+    if (!foundUser) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    // if specified, will remove only x instances of a product from a user
+    if (req.params.limit) {
+      const limit = req.params.limit;
+
+      // postgres doesn't allow limits on deletes
+      const removedProductLines = await User.query()
+        .select()
+        .from("user_product")
+        .delete()
+        .whereIn(
+          "id",
+          User.query()
+            .select("id")
+            .from("user_product")
+            .where("user_id", "=", user_id)
+            .andWhere("product_id", "=", product_id)
+            .limit(limit)
+        );
+
+      return res.send({
+        message: `Lowered product amount by ${removedProductLines}`,
+      });
+    }
+
+    const removedProductFromUser = await User.relatedQuery("products")
+      // returns number of affected items
+      .for(user_id)
+      .unrelate()
+      .where("products.id", "=", product_id);
+
+    if (!removedProductFromUser) {
+      return res
+        .status(404)
+        .send({ message: "User doesn't have this product" });
+    }
+
+    res.status(200).send({ message: "Removed products from user" });
+  } catch (error) {
+    console.log(error);
   }
 });
 
+// TODO refactor
 router.get("/:user_id/products", async (req, res) => {
   const user_id = req.params.user_id;
-  const user = await knex("users").where({ id: user_id });
 
-  if (user.length === 0) {
-    res.status(404).send({ message: "User not found" });
-  } else {
-    // SELECT * FROM products JOIN (select product_id, count(product_id) from user_product where user_id = 6001 group by product_id) as amount ON products.id = amount.product_id
+  try {
+    const foundUser = await User.query().findById(user_id);
+
+    if (!foundUser) {
+      return res.status(404).send({ message: "User not found" });
+    }
+    // Maybe refactor this to use objection
     const userProducts = await knex.select(
       knex.raw(
         "* FROM products JOIN (select product_id, count(product_id) from user_product where user_id = ? group by product_id) as amount ON products.id = amount.product_id",
         [user_id]
       )
     );
+
     if (userProducts.length === 0) {
-      res.status(404).send({ message: "User has no products" });
-    } else {
-      res.status(200).send(userProducts);
+      return res.status(404).send({ message: "User has no products" });
     }
+
+    // Query above returns each product object with "product_id" and "count", this just removes the duplicate product_id
+    for (let i = 0; i < userProducts.length; i++) {
+      const element = userProducts[i];
+      delete element.product_id;
+    }
+
+    res.status(200).send(userProducts);
+  } catch (error) {
+    console.log(error);
   }
 });
 
