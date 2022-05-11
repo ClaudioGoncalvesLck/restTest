@@ -4,7 +4,7 @@
 
 CRUD API with users and products where a user can have many products and a product can belong to several users
 
-Example:
+Entity routes:
 
 | Operation  | URL                    | Method | Inputs       |
 |------------|------------------------|--------|--------------|
@@ -13,6 +13,14 @@ Example:
 | deleteUser | /user/{id}             | DELETE | [id]         |
 | updateUser | /user/{id}?name={name} | PATCH  | [id], [name] |
 | createUser | /user?name={name}      | POST   | [name]       |
+
+Relation routes: 
+| Operation             | URL                                 | Method | Inputs                             |
+|-----------------------|-------------------------------------|--------|------------------------------------|
+| addProductToUser      | /user/{user_id}/{product_id}        | POST   | [user_id], [product_id]            |
+| removeProductFromUser | /user/{user_id}/{product_id}/limit? | DELETE | [user_id], [products_id], [limit]? |
+| getUserProducts       | /user/{user_id}/products            | GET    | [user_id]                          |
+
 
 ## Requirements
 
@@ -42,7 +50,6 @@ nodemon server.js
 ### Setup docker
 
 ```bash
-cd docker/
 docker compose up -d
 ```
 
@@ -65,8 +72,13 @@ Username: postgres
 ### Run migrations
 
 ```bash
-cd ../db/
 npx knex migrate:latest
+```
+
+### Seed
+Creates 10.000 fake users and products
+```bash
+npx knex seed:run
 ```
 
 
