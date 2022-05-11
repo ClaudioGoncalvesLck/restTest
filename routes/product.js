@@ -15,15 +15,14 @@ Model.knex(knex);
 router.get("/", async (req, res) => {
   try {
     const foundProducts = await Product.query();
-    if (!foundProducts) {
-      res.status(404).send({ message: "Products not found" });
-      return;
+    if (foundProducts.length === 0) {
+      return res.status(404).send({ message: "Products not found" });
     }
-    res.status(200).send(products);
+
+    res.status(200).send(foundProducts);
   } catch (error) {
     if (error instanceof ValidationError) {
-      res.status(400).send(inputValidationErrorHandler(error));
-      return;
+      return res.status(400).send(inputValidationErrorHandler(error));
     }
 
     console.log(error);
@@ -39,8 +38,7 @@ router.post("/", async (req, res) => {
     res.status(201).send({ message: "Product created", createdProduct });
   } catch (error) {
     if (error instanceof ValidationError) {
-      res.status(400).send(inputValidationErrorHandler(error));
-      return;
+      return res.status(400).send(inputValidationErrorHandler(error));
     }
 
     console.log(error);
@@ -54,8 +52,7 @@ router.get("/:product_id", async (req, res) => {
   try {
     const foundProduct = await Product.query().findById(product_id);
     if (!foundProduct) {
-      res.status(404).send({ message: "Product not found" });
-      return;
+      return res.status(404).send({ message: "Product not found" });
     }
 
     res.status(200).send({ message: "Product found", foundProduct });
@@ -73,8 +70,7 @@ router.delete("/:product_id", async (req, res) => {
       .deleteById(product_id)
       .returning("*");
     if (!deletedProduct) {
-      res.status(404).send({ message: "Product not found" });
-      return;
+      return res.status(404).send({ message: "Product not found" });
     }
 
     res.status(200).send({ message: "Product deleted", deletedProduct });
@@ -94,15 +90,13 @@ router.patch("/:product_id", async (req, res) => {
       .patch(productInfo)
       .returning("*");
     if (!updatedProduct) {
-      res.status(404).send({ message: "Product not found" });
-      return;
+      return res.status(404).send({ message: "Product not found" });
     }
 
     res.status(200).send({ message: "Product updated", updatedProduct });
   } catch (error) {
     if (error instanceof ValidationError) {
-      res.status(400).send(inputValidationErrorHandler(error));
-      return;
+      return res.status(400).send(inputValidationErrorHandler(error));
     }
 
     console.log(error);

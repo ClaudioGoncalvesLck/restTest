@@ -1,6 +1,8 @@
 const faker = require("faker");
 const createFakeUser = () => ({
   name: faker.name.findName(),
+  email: faker.internet.exampleEmail(),
+  password: faker.internet.password(),
 });
 
 /**

@@ -4,6 +4,10 @@ const { Model } = require("objection");
 const path = require("path");
 
 class User extends Model {
+  // $afterFind() {
+  //   delete this.password;
+  // }
+
   $beforeUpdate() {
     this.updated_at = new Date().toISOString();
   }
@@ -13,10 +17,12 @@ class User extends Model {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["name"],
+      required: ["name", "email", "password"],
 
       properties: {
         name: { type: "string", minLength: 2, maxLength: 20 },
+        email: { type: "string" },
+        password: { type: "string" },
       },
     };
   }
