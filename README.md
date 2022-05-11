@@ -15,11 +15,11 @@ Entity routes:
 | createUser | /user?name={name}      | POST   | [name]       |
 
 Relation routes: 
-| Operation             | URL                                 | Method | Inputs                             |
-|-----------------------|-------------------------------------|--------|------------------------------------|
-| addProductToUser      | /user/{user_id}/{product_id}        | POST   | [user_id], [product_id]            |
-| removeProductFromUser | /user/{user_id}/{product_id}/limit? | DELETE | [user_id], [products_id], [limit]? |
-| getUserProducts       | /user/{user_id}/products            | GET    | [user_id]                          |
+| Operation             | URL                                        | Method | Inputs                             |
+|-----------------------|--------------------------------------------|--------|------------------------------------|
+| addProductToUser      | /user/{user_id}/{product_id}               | POST   | [user_id], [product_id]            |
+| removeProductFromUser | /user/{user_id}/{product_id}?limit={limit} | DELETE | [user_id], [products_id], [limit] |
+| getUserProducts       | /user/{user_id}/products                   | GET    | [user_id]                          |
 
 
 ## Requirements
