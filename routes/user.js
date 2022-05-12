@@ -12,7 +12,7 @@ Model.knex(knex);
 const { inputValidationErrorHandler } = require("../utils/helper");
 
 // GET ALL USERS
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const foundUsers = await User.query().select(
       "id",
@@ -31,12 +31,12 @@ router.get("/", async (req, res) => {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
 
-    console.log(error);
+    next(error);
   }
 });
 
 // CREATE USER
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   const newUserInfo = req.query;
 
   try {
@@ -48,12 +48,12 @@ router.post("/", async (req, res) => {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
 
-    console.log(error);
+    next(error);
   }
 });
 
 // GET USER
-router.get("/:user_id", async (req, res) => {
+router.get("/:user_id", async (req, res, next) => {
   const user_id = req.params.user_id;
 
   try {
@@ -67,12 +67,12 @@ router.get("/:user_id", async (req, res) => {
 
     res.status(200).send({ message: "User found", foundUser });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
 // DELETE USER
-router.delete("/:user_id", async (req, res) => {
+router.delete("/:user_id", async (req, res, next) => {
   const user_id = req.params.user_id;
 
   try {
@@ -87,12 +87,12 @@ router.delete("/:user_id", async (req, res) => {
 
     res.status(200).send({ message: "User deleted", deletedUser });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
 // UPDATE
-router.patch("/:user_id", async (req, res) => {
+router.patch("/:user_id", async (req, res, next) => {
   const userInfo = req.query;
   const user_id = req.params.user_id;
 
@@ -113,12 +113,12 @@ router.patch("/:user_id", async (req, res) => {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
 
-    console.log(error);
+    next(error);
   }
 });
 
 // RELATION ROUTES
-router.post("/:user_id/product/:product_id", async (req, res) => {
+router.post("/:user_id/product/:product_id", async (req, res, next) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
 
@@ -141,12 +141,12 @@ router.post("/:user_id/product/:product_id", async (req, res) => {
     // 200 || 201 ?
     res.status(200).send({ message: "Added product to user" });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
 // removes every instance of a product from user
-router.delete("/:user_id/product/:product_id", async (req, res) => {
+router.delete("/:user_id/product/:product_id", async (req, res, next) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
 
@@ -159,6 +159,8 @@ router.delete("/:user_id/product/:product_id", async (req, res) => {
     // if specified, will remove only x instances of a product from a user
     if (req.query.limit) {
       const limit = req.query.limit;
+
+      // TODO refactor
       // postgres doesn't allow limits on deletes
       const removedProductLines = await User.query()
         .select()
@@ -193,12 +195,12 @@ router.delete("/:user_id/product/:product_id", async (req, res) => {
 
     res.status(200).send({ message: "Removed products from user" });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
 // TODO refactor
-router.get("/:user_id/products", async (req, res) => {
+router.get("/:user_id/products", async (req, res, next) => {
   const user_id = req.params.user_id;
 
   try {
@@ -227,7 +229,7 @@ router.get("/:user_id/products", async (req, res) => {
 
     res.status(200).send(userProducts);
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 

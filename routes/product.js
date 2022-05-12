@@ -12,7 +12,7 @@ const { inputValidationErrorHandler } = require("../utils/helper");
 Model.knex(knex);
 
 //GET ALL PRODUCTS
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const foundProducts = await Product.query();
     if (foundProducts.length === 0) {
@@ -24,13 +24,12 @@ router.get("/", async (req, res) => {
     if (error instanceof ValidationError) {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
-
-    console.log(error);
+    next(error);
   }
 });
 
 //CREATE PRODUCT
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   const newProductInfo = req.query;
 
   try {
@@ -41,12 +40,12 @@ router.post("/", async (req, res) => {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
 
-    console.log(error);
+    next(error);
   }
 });
 
 //GET PRODUCT
-router.get("/:product_id", async (req, res) => {
+router.get("/:product_id", async (req, res, next) => {
   const product_id = req.params.product_id;
 
   try {
@@ -57,12 +56,12 @@ router.get("/:product_id", async (req, res) => {
 
     res.status(200).send({ message: "Product found", foundProduct });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
 //DELETE PRODUCT
-router.delete("/:product_id", async (req, res) => {
+router.delete("/:product_id", async (req, res, next) => {
   const product_id = req.params.product_id;
 
   try {
@@ -75,12 +74,12 @@ router.delete("/:product_id", async (req, res) => {
 
     res.status(200).send({ message: "Product deleted", deletedProduct });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 });
 
 //UPDATE PRODUCT
-router.patch("/:product_id", async (req, res) => {
+router.patch("/:product_id", async (req, res, next) => {
   const productInfo = req.query;
   const product_id = req.params.product_id;
 
@@ -99,7 +98,7 @@ router.patch("/:product_id", async (req, res) => {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
 
-    console.log(error);
+    next(error);
   }
 });
 
