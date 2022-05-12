@@ -21,6 +21,7 @@ router.get("/", async (req, res, next) => {
       "created_at",
       "updated_at"
     );
+
     if (foundUsers.length === 0) {
       return res.status(404).send({ message: "Users not found" });
     }
@@ -40,9 +41,15 @@ router.post("/", async (req, res, next) => {
   const newUserInfo = req.query;
 
   try {
-    // TODO check syntax
-    await User.query().insert(newUserInfo);
-    res.status(201).send({ message: "User created" });
+    const createdUser = await User.query().insert(newUserInfo).returning("*");
+    const sendUser = {
+      id: createdUser.id,
+      name: createdUser.name,
+      email: createdUser.email,
+      created_at: createdUser.created_at,
+    };
+
+    res.status(201).send({ message: "User created", user: sendUser });
   } catch (error) {
     if (error instanceof ValidationError) {
       return res.status(400).send(inputValidationErrorHandler(error));
@@ -100,7 +107,7 @@ router.patch("/:user_id", async (req, res, next) => {
     const updatedUser = await User.query()
       .findById(user_id)
       .patch(userInfo)
-      .returning("*");
+      .returning("name", "email");
 
     // returns undefined if user doesn't exist
     if (!updatedUser) {
@@ -121,8 +128,8 @@ router.patch("/:user_id", async (req, res, next) => {
 router.post("/:user_id/product/:product_id", async (req, res, next) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
-
   const foundUser = await User.query().findById(user_id);
+
   if (!foundUser) {
     return res.status(404).send({ message: "User not found" });
   }
@@ -131,27 +138,29 @@ router.post("/:user_id/product/:product_id", async (req, res, next) => {
     .select()
     .from("products")
     .where("id", "=", product_id);
+
   if (foundProduct.length === 0) {
     return res.status(404).send({ message: "Product not found" });
   }
 
   try {
-    // TODO check syntax
     await User.relatedQuery("products").for(user_id).relate(product_id);
-    // 200 || 201 ?
-    res.status(200).send({ message: "Added product to user" });
+    res
+      .status(201)
+      .send({ message: "Added product to user", product: foundProduct[0] });
   } catch (error) {
     next(error);
   }
 });
 
-// removes every instance of a product from user
+// removes every instance of a product from user or specified amount
 router.delete("/:user_id/product/:product_id", async (req, res, next) => {
   const product_id = req.params.product_id;
   const user_id = req.params.user_id;
 
   try {
     const foundUser = await User.query().findById(user_id);
+
     if (!foundUser) {
       return res.status(404).send({ message: "User not found" });
     }
@@ -159,10 +168,7 @@ router.delete("/:user_id/product/:product_id", async (req, res, next) => {
     // if specified, will remove only x instances of a product from a user
     if (req.query.limit) {
       const limit = req.query.limit;
-
-      // TODO refactor
-      // postgres doesn't allow limits on deletes
-      const removedProductLines = await User.query()
+      const removedProductLines = await User.query() // postgres doesn't allow limits on deletes
         .select()
         .from("user_product")
         .delete()
@@ -199,7 +205,7 @@ router.delete("/:user_id/product/:product_id", async (req, res, next) => {
   }
 });
 
-// TODO refactor
+// TODO refactor query
 router.get("/:user_id/products", async (req, res, next) => {
   const user_id = req.params.user_id;
 
@@ -209,8 +215,10 @@ router.get("/:user_id/products", async (req, res, next) => {
     if (!foundUser) {
       return res.status(404).send({ message: "User not found" });
     }
-    // Maybe refactor this to use objection
+
+    // https://knexjs.org/#Raw-Expressions
     const userProducts = await knex.select(
+      // Maybe refactor this to use objection
       knex.raw(
         "* FROM products JOIN (select product_id, count(product_id) from user_product where user_id = ? group by product_id) as amount ON products.id = amount.product_id",
         [user_id]
@@ -222,12 +230,11 @@ router.get("/:user_id/products", async (req, res, next) => {
     }
 
     // Query above returns each product object with "product_id" and "count", this just removes the duplicate product_id
-    for (let i = 0; i < userProducts.length; i++) {
-      const element = userProducts[i];
-      delete element.product_id;
-    }
+    const sendUserProducts = userProducts.map(({ product_id, ...rest }) => {
+      return rest;
+    });
 
-    res.status(200).send(userProducts);
+    res.status(200).send(sendUserProducts);
   } catch (error) {
     next(error);
   }

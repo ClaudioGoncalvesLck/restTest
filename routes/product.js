@@ -15,6 +15,7 @@ Model.knex(knex);
 router.get("/", async (req, res, next) => {
   try {
     const foundProducts = await Product.query();
+
     if (foundProducts.length === 0) {
       return res.status(404).send({ message: "Products not found" });
     }
@@ -24,6 +25,7 @@ router.get("/", async (req, res, next) => {
     if (error instanceof ValidationError) {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
+
     next(error);
   }
 });
@@ -34,12 +36,12 @@ router.post("/", async (req, res, next) => {
 
   try {
     const createdProduct = await Product.query().insert(newProductInfo);
+
     res.status(201).send({ message: "Product created", createdProduct });
   } catch (error) {
     if (error instanceof ValidationError) {
       return res.status(400).send(inputValidationErrorHandler(error));
     }
-
     next(error);
   }
 });
@@ -50,6 +52,7 @@ router.get("/:product_id", async (req, res, next) => {
 
   try {
     const foundProduct = await Product.query().findById(product_id);
+
     if (!foundProduct) {
       return res.status(404).send({ message: "Product not found" });
     }
@@ -68,6 +71,7 @@ router.delete("/:product_id", async (req, res, next) => {
     const deletedProduct = await Product.query()
       .deleteById(product_id)
       .returning("*");
+
     if (!deletedProduct) {
       return res.status(404).send({ message: "Product not found" });
     }
@@ -88,6 +92,7 @@ router.patch("/:product_id", async (req, res, next) => {
       .findById(product_id)
       .patch(productInfo)
       .returning("*");
+
     if (!updatedProduct) {
       return res.status(404).send({ message: "Product not found" });
     }
