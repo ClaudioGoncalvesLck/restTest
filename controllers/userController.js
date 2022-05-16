@@ -1,5 +1,5 @@
 const knex = require("../db/knex");
-const { Model, ValidationError } = require("objection");
+const { Model, ValidationError, NotFoundError } = require("objection");
 const { User } = require("../models/User");
 const { inputValidationErrorHandler } = require("../utils/helper");
 
