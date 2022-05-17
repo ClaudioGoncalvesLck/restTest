@@ -1,11 +1,16 @@
 // RELATION ROUTES
 var express = require("express");
 var router = express.Router();
+const auth = require("../middleware/auth");
 const user_productController = require("../controllers/user_productController ");
 
-router.post("/user/:user_id/product/:product_id", async (req, res, next) => {
-  user_productController.user__product_create(req, res, next);
-});
+router.post(
+  "/user/:user_id/product/:product_id",
+  auth,
+  async (req, res, next) => {
+    user_productController.user__product_create(req, res, next);
+  }
+);
 
 // removes every instance of a product from user or specified amount
 router.delete("/user/:user_id/product/:product_id", async (req, res, next) => {
